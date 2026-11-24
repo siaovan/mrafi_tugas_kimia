@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Periodic Table — The Architecture of Matter</title>
+<style>
+/* ===== Design tokens ===== */
+:root{--bg:#05070B;--bg2:#0A0F18;--bg3:#101722;--cy:#22d3ee;--bl:#3b82f6;--vi:#8b5cf6;--mu:#9aa8c0;--ln:#1c2740;--ease:cubic-bezier(.2,.7,.2,1)}
+*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:#fff;font:400 16px/1.55 Inter,Manrope,"Space Grotesk",system-ui,sans-serif;overflow-x:hidden}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--cy);outline-offset:3px}
+section{position:relative;min-height:100vh;padding:14vh 6vw}
+.pin{position:sticky;top:0;height:100vh;overflow:hidden}
+.tag{font:600 12px/1 Inter,system-ui,sans-serif;letter-spacing:.32em;color:var(--cy);text-transform:uppercase}
+.h1{font-weight:800;font-size:clamp(40px,9vw,140px);line-height:.92;letter-spacing:-.035em;text-transform:uppercase}
+.h2{font-weight:800;font-size:clamp(32px,6vw,88px);line-height:.95;letter-spacing:-.03em;text-transform:uppercase}
+.mu{color:var(--mu)}.cy{color:var(--cy)}.vi{color:#a78bfa}
+.btn{border:1px solid #2b3b63;background:rgba(16,23,34,.7);padding:.8em 1.4em;border-radius:999px;letter-spacing:.14em;font-size:12px;font-weight:600;text-transform:uppercase;transition:.35s var(--ease)}
+.btn:hover,.btn.on{border-color:var(--cy);box-shadow:0 0 24px rgba(34,211,238,.25);background:rgba(34,211,238,.1)}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.rv{opacity:0;transform:translateY(46px) scale(.98);filter:blur(10px);transition:opacity 1s var(--ease),transform 1s var(--ease),filter 1s var(--ease)}
+.rv.in{opacity:1;transform:none;filter:none}
+/* nav */
+#brand{position:fixed;top:22px;left:6vw;z-index:50;font:600 12px Inter;letter-spacing:.3em;mix-blend-mode:difference}
+#menuBtn{position:fixed;top:14px;right:6vw;z-index:60;padding:.6em 1.2em}
+#prog{position:fixed;right:2.2vw;top:25vh;height:50vh;width:2px;background:var(--ln);z-index:40}#prog i{display:block;width:100%;height:0;background:var(--cy);box-shadow:0 0 10px var(--cy)}
+#menu{position:fixed;inset:0;z-index:55;background:rgba(5,7,11,.96);display:flex;flex-direction:column;justify-content:center;padding:0 10vw;opacity:0;pointer-events:none;transition:.6s var(--ease);backdrop-filter:blur(14px)}
+#menu.open{opacity:1;pointer-events:auto}
+#menu button{background:none;border:0;text-align:left;font-weight:800;font-size:clamp(24px,4.6vw,56px);letter-spacing:-.02em;padding:.12em 0;color:#5b6b8c;transform:translateY(30px);opacity:0;transition:.6s var(--ease)}
+#menu.open button{transform:none;opacity:1}#menu button:hover{color:#fff;padding-left:.4em}#menu b{font-size:.3em;color:var(--cy);margin-right:1.2em;letter-spacing:.3em}
+/* stage */
+#stage{position:absolute;inset:0;width:100%;height:100%}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0 6vw;pointer-events:none}
+#hero .h1{font-size:clamp(44px,11vw,170px)}#hero .btn{margin-top:3vh}
+#hero{background:radial-gradient(ellipse at center,rgba(5,7,11,.65) 0%,rgba(5,7,11,.15) 70%)}
+/* why */
+#why svg{position:absolute;left:50%;top:50%;width:min(80vmin,720px);transform:translate(-50%,-50%)}
+.lay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 6vw}
+.lbl{position:absolute;font-weight:800;letter-spacing:.2em;font-size:clamp(14px,2vw,22px)}
+#chain{align-items:flex-start}#chain div{font-weight:800;font-size:clamp(22px,4.6vw,60px);letter-spacing:-.02em;opacity:.08;transition:.6s var(--ease);position:relative;padding-left:1.4em}
+#chain div.on{opacity:1}#chain div::before{content:"↓";position:absolute;left:0;color:var(--cy);opacity:0;transition:.6s}#chain div.on:not(:last-child)::before{opacity:1}
+/* apps */
+#apps .sym{font-weight:800;font-size:clamp(120px,30vw,420px);line-height:1;letter-spacing:-.06em;position:absolute;left:0;right:0;text-align:center;top:50%;margin-top:-.52em}
+#apps .word{position:absolute;left:0;right:0;text-align:center;top:50%;transform:translateY(-50%);font-weight:800;font-size:clamp(48px,12vw,180px);letter-spacing:-.04em;text-transform:uppercase;opacity:0}
+#apps .desc{position:absolute;bottom:12vh;left:0;right:0;text-align:center;color:var(--mu);font-size:clamp(14px,1.6vw,20px);padding:0 8vw}
+#apps .form{position:absolute;top:14vh;left:0;right:0;text-align:center}
+#siv{position:absolute;left:50%;top:50%;width:min(60vmin,420px);transform:translate(-50%,-50%);opacity:0}
+/* objectives */
+#obj .o{display:flex;gap:3vw;align-items:baseline;margin:3.2vh 0;font-weight:800;font-size:clamp(22px,4vw,56px);letter-spacing:-.02em;line-height:1.05}
+#obj .o b{color:var(--cy);font-size:.5em;letter-spacing:.2em;min-width:2.4em}
+/* table */
+.pt{display:grid;grid-template-columns:repeat(18,minmax(36px,1fr));grid-template-rows:repeat(7,auto) 12px repeat(2,auto);gap:3px;min-width:740px}
+.el{aspect-ratio:1/1.08;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(16,23,34,.85);border:1px solid var(--k,#24304f);border-radius:5px;transition:transform .3s var(--ease),box-shadow .3s,background .8s,opacity .8s,border-color .3s;position:relative}
+.el i{font:600 9px/1 Inter;color:var(--mu);font-style:normal;position:absolute;top:3px;left:4px}.el b{font-size:clamp(11px,1.3vw,18px)}
+.el:hover,.el:focus-visible{transform:scale(1.35);z-index:5;border-color:var(--cy);box-shadow:0 0 22px rgba(34,211,238,.55)}
+.el.hit{border-color:var(--cy);box-shadow:0 0 28px var(--cy);background:rgba(34,211,238,.35)}
+.el.bad{animation:shake .4s}@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.c-alk,.c-alke{--k:#6d4fc2}.c-tm{--k:#2f5fc4}.c-pt{--k:#4a5a7c}.c-met{--k:#1f8a9c}.c-nm{--k:#22a9c4}.c-hal{--k:#67e8f9}.c-ng{--k:#a78bfa}.c-lan,.c-act{--k:#5b5fd1}
+.pt.tr .el{background:rgba(34,211,238,calc(.06 + var(--v,0)*.85));transition-delay:calc(var(--c)*25ms)}.pt.tr .el.nd{opacity:.22;background:#101722}
+.pt.tr .el b{text-shadow:0 0 6px #000}
+.wrap{overflow-x:auto;padding:14px 0}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--mu);margin:10px 0}.legend span::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--k);border-radius:2px;margin-right:6px}
+.dir{font-size:13px;letter-spacing:.14em;color:var(--cy);min-height:2.6em;font-weight:600}
+#tw{transition:transform .9s var(--ease),filter .9s,opacity .9s}#tw.zoom{transform:scale(2.4);filter:blur(8px);opacity:.15}
+#detail{position:fixed;inset:0;z-index:70;background:rgba(5,7,11,.82);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.6s var(--ease);padding:5vw}
+#detail.open{opacity:1;pointer-events:auto}
+#dcard{display:grid;grid-template-columns:minmax(150px,260px) 1fr;gap:4vw;max-width:900px;width:100%;align-items:center}
+#dcard .big{border:2px solid var(--cy);border-radius:14px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(34,211,238,.25);background:var(--bg3)}
+#dcard .big i{font-style:normal;font-size:22px;color:var(--mu)}#dcard .big b{font-size:clamp(56px,10vw,120px);line-height:1}
+#dcard dl{display:grid;grid-template-columns:auto 1fr;gap:6px 22px}#dcard dt{color:var(--mu);font-size:12px;letter-spacing:.16em;text-transform:uppercase;padding-top:.25em}#dcard dd{font-weight:600}
+/* panels */
+.row{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:5vw;align-items:center}
+.sub{margin-top:14vh}
+svg text{fill:#fff;font-family:Inter,system-ui,sans-serif}
+.stat{display:flex;gap:2.4vw;margin:14px 0;flex-wrap:wrap}.stat div{font-size:12px;letter-spacing:.14em;color:var(--mu);text-transform:uppercase}.stat b{text-transform:none;display:block;font-size:clamp(22px,3vw,36px);color:#fff;letter-spacing:0}
+.spin{animation:sp linear infinite;transform-origin:150px 150px}@keyframes sp{to{transform:rotate(360deg)}}
+#gcv{width:100%;height:min(54vh,460px);display:block}
+.big2{font-weight:800;font-size:clamp(34px,6vw,84px);letter-spacing:-.03em}
+.step{display:flex;gap:2vw;align-items:baseline;padding:10px 0;border-top:1px solid var(--ln)}.step b{color:var(--cy);letter-spacing:.2em;font-size:12px;min-width:7em}
+#mini{max-width:760px;transition:transform 1.4s var(--ease);transform-origin:0 100%}.pt.small{min-width:0;grid-template-rows:repeat(3,auto)}
+.hud{display:flex;gap:4vw;flex-wrap:wrap;font-weight:800;font-size:clamp(20px,3vw,36px);margin:14px 0}.hud span{font-size:11px;display:block;letter-spacing:.2em;color:var(--mu);font-weight:600}
+#mission{font-weight:800;font-size:clamp(22px,4vw,48px);min-height:1.4em;letter-spacing:-.02em}
+#fb{font-weight:800;letter-spacing:.2em;min-height:1.6em}
+.bar{height:4px;background:var(--ln);border-radius:4px;overflow:hidden;margin:16px 0}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--bl),var(--cy));transition:width .8s var(--ease)}
+.fld{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin:18px 0}
+.fld input{background:var(--bg3);border:1px solid var(--ln);border-radius:8px;padding:.7em .9em;width:100%}.fld label{font-size:11px;letter-spacing:.16em;color:var(--mu);text-transform:uppercase;display:block;margin-bottom:4px}
+.chk{display:flex;flex-wrap:wrap;gap:10px 28px;margin:10px 0}.chk label{display:flex;gap:8px;align-items:center;cursor:pointer}.chk input{accent-color:#22d3ee;width:18px;height:18px}
+.cards{display:flex;flex-wrap:wrap;gap:10px}.cards div{background:var(--bg3);border:1px solid var(--ln);border-radius:8px;padding:10px 14px;font-size:13px}.cards b{color:var(--cy);font-size:20px;margin-right:6px}
+.opt{display:block;width:100%;text-align:left;background:var(--bg3);border:1px solid var(--ln);border-radius:10px;padding:1em 1.2em;margin:10px 0;font-weight:600;font-size:clamp(16px,1.8vw,22px);transition:.3s var(--ease)}
+.opt:hover:not([disabled]){border-color:var(--cy);transform:translateX(8px)}.opt.ok{border-color:#4ade80;background:rgba(74,222,128,.12)}.opt.no{border-color:#f87171;background:rgba(248,113,113,.12)}
+#final{overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}#fcv{position:absolute;inset:0;width:100%;height:100%}
+#final>div{position:relative;z-index:2}#final .h2{margin:1vh 0}
+.sr{position:absolute;left:-9999px}
+@media(max-width:800px){.two{grid-template-columns:1fr}#dcard{grid-template-columns:1fr}#prog{display:none}section{padding:12vh 5vw}.lbl{font-size:12px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition-duration:.01s!important;animation-duration:.01s!important;animation-iteration-count:1!important}.rv{opacity:1;transform:none;filter:none}}
+</style></head><body>
+<div id="brand">PERIODIC / <span id="bn">01</span></div>
+<button class="btn" id="menuBtn" aria-label="Open navigation menu" aria-expanded="false">Menu</button>
+<div id="prog" aria-hidden="true"><i></i></div>
+<nav id="menu" aria-label="Sections"></nav>
+
+<!-- 01 OPENING + COVER: one scroll-driven camera -->
+<section id="top" style="height:520vh;padding:0"><div class="pin">
+<canvas id="stage" aria-hidden="true"></canvas>
+<div class="ov" id="o1"><div class="tag">Chemistry / 01</div></div>
+<div class="ov" id="o2"><div class="h1">The universe<br>is built<br>from elements.</div></div>
+<div class="ov" id="hero"><div class="tag" style="margin-bottom:2vh">Chemistry / 01</div><div class="h1">The<br>Periodic<br>Table</div><p class="mu" style="margin-top:2.4vh;font-size:clamp(14px,1.8vw,22px);letter-spacing:.08em">Understanding the Architecture of Matter</p><button class="btn" id="explore" aria-label="Explore the elements, scroll to next section">Explore the elements ↓</button></div>
+</div></section>
+
+<!-- 02 WHY: atom → zoom → configuration → table → properties -->
+<section id="why" style="height:480vh;padding:0"><div class="pin">
+<div class="lay" id="wT"><div class="tag">02 / Introduction</div><div class="h2" style="margin-top:2vh">Why do elements<br>behave differently?</div></div>
+<svg id="wA" viewBox="-300 -300 600 600" aria-label="Animated atom with orbiting electrons"><g id="wAg"></g></svg>
+<div class="lbl cy" id="l1" style="left:56%;top:30%">PROTON +</div><div class="lbl" id="l2" style="left:58%;top:50%">NEUTRON 0</div><div class="lbl vi" id="l3" style="left:8%;top:66%">ELECTRON −</div>
+<div class="lay" id="wC" style="align-items:flex-end;text-align:right"><div class="tag">Electrons occupy shells</div><div class="h2" style="margin-top:2vh">Electron<br>Configuration</div><p class="mu" id="cfgT" style="font-size:clamp(20px,3vw,40px);margin-top:2vh">1s² 2s² 2p⁶ 3s¹</p></div>
+<div class="lay" id="chain"><div>Atom</div><div>Electrons</div><div>Electron configuration</div><div>Periodic table</div><div>Properties</div></div>
+</div></section>
+
+<!-- 03 APPLICATIONS: full-screen transformations -->
+<section id="apps" style="height:760vh;padding:0"><div class="pin" id="appP">
+<div class="form tag" id="aTag">03 / Elements are everywhere</div><div class="sym" id="aS">H</div><div class="word" id="aW">H₂O</div>
+<svg id="siv" viewBox="0 0 200 200" aria-hidden="true"><g id="sv0"></g><g id="sv1"><rect x="40" y="40" width="120" height="120" rx="8" fill="#101722" stroke="#22d3ee" stroke-width="3"/><rect x="70" y="70" width="60" height="60" fill="#3b82f6" opacity=".5"/><path id="pins" stroke="#22d3ee" stroke-width="4"/></g><g id="sv2"><rect x="35" y="45" width="130" height="85" rx="6" fill="#101722" stroke="#3b82f6" stroke-width="3"/><rect x="20" y="136" width="160" height="10" rx="5" fill="#101722" stroke="#3b82f6" stroke-width="3"/><rect x="88" y="78" width="24" height="24" fill="#22d3ee" opacity=".7"/></g></svg>
+<div class="desc" id="aD"></div></div></section>
+
+<!-- 04 OBJECTIVES -->
+<section id="obj"><div class="tag rv">04 / Mission briefing</div><div class="h2 rv" style="margin:2vh 0 6vh">By the end<br>of this journey</div>
+<div class="o rv"><b>01</b>Understand the periodic table.</div><div class="o rv"><b>02</b>Understand electron configuration.</div><div class="o rv"><b>03</b>Analyze atomic radius.</div><div class="o rv"><b>04</b>Analyze electronegativity.</div><div class="o rv"><b>05</b>Apply periodic trends to solve problems.</div></section>
+
+<!-- 05 INTERACTIVE TABLE + TRENDS -->
+<section id="table"><div class="tag rv">05 / Interactive periodic table</div><div class="h2 rv" style="margin:2vh 0">Pick an element.<br>Pick a trend.</div>
+<div class="row rv" role="group" aria-label="Trend selector"><button class="btn on" data-m="" aria-label="Show categories">Categories</button><button class="btn" data-m="rad" aria-label="Show atomic radius trend">Atomic radius</button><button class="btn" data-m="en" aria-label="Show electronegativity trend">Electronegativity</button><button class="btn" data-m="ie" aria-label="Show ionization energy trend">Ionization energy</button></div>
+<div class="dir" id="dir" aria-live="polite"></div>
+<div class="wrap rv" id="tw"><div class="pt" id="pt"></div></div>
+<div class="legend" id="lg"></div><p class="mu" style="font-size:13px">Trend data (radius, ionization energy) covers H–Kr; electronegativity covers all elements with a Pauling value. Dim cells have no data. Click any element for details.</p>
+<div class="sub two"><div class="rv"><div class="tag">Atomic radius · compare</div><div class="h2" style="margin:2vh 0">Na vs Cl</div><div class="row"><button class="btn" id="cmp" aria-label="Compare sodium and chlorine radius">Compare</button><button class="btn" id="cmpR" aria-label="Reset comparison">Reset</button></div><p id="cmpT" class="mu" aria-live="polite">Press compare to see both atoms side by side.</p></div>
+<svg viewBox="0 0 400 240" class="rv" role="img" aria-label="Sodium atom drawn larger than chlorine atom"><g id="gNa" style="transition:transform 1.2s var(--ease);transform:translate(200px,120px)"><circle r="90" fill="#3b82f6" opacity=".35" stroke="#3b82f6" stroke-width="3"/><text text-anchor="middle" y="10" font-size="32" font-weight="800">Na</text></g><g id="gCl" style="transition:transform 1.2s var(--ease);transform:translate(200px,120px)"><circle r="50" fill="#8b5cf6" opacity=".6" stroke="#a78bfa" stroke-width="3"/><text text-anchor="middle" y="9" font-size="26" font-weight="800">Cl</text></g><text id="tNa" x="110" y="232" text-anchor="middle" font-size="13" opacity="0">180 pm</text><text id="tCl" x="290" y="232" text-anchor="middle" font-size="13" opacity="0">100 pm</text></svg></div></section>
+<div id="detail" role="dialog" aria-modal="true" aria-label="Element details"><div id="dcard"><div class="big" id="dBig"></div><div><dl id="dDl"></dl><button class="btn" id="dClose" style="margin-top:22px" aria-label="Close element details">Close</button></div></div></div>
+
+<!-- 06 SIMULATION -->
+<section id="sim"><div class="tag rv">06 / Simulation</div><div class="h2 rv" style="margin:2vh 0 5vh">Make an ion</div>
+<div class="two"><div class="rv"><svg id="svNa" viewBox="0 0 300 300" role="img" aria-label="Sodium atom electron shells"></svg><div class="stat" id="sNa"></div><div class="row"><button class="btn" id="bRem" aria-label="Remove one electron from sodium">Remove electron</button><button class="btn" id="rNa" aria-label="Reset sodium">Reset</button></div></div>
+<div class="rv"><svg id="svCl" viewBox="0 0 300 300" role="img" aria-label="Chlorine atom electron shells"></svg><div class="stat" id="sCl"></div><div class="row"><button class="btn" id="bAdd" aria-label="Add one electron to chlorine">Add electron</button><button class="btn" id="rCl" aria-label="Reset chlorine">Reset</button></div></div></div></section>
+
+<!-- 07 GRAPH -->
+<section id="graph"><div class="tag rv">07 / Scientific visualization</div><div class="h2 rv" style="margin:2vh 0">Trend graph</div>
+<div class="row rv" id="gm"><button class="btn on" data-p="rad" aria-label="Graph atomic radius">Atomic radius</button><button class="btn" data-p="en" aria-label="Graph electronegativity">Electronegativity</button><button class="btn" data-p="ie" aria-label="Graph ionization energy">Ionization energy</button><span style="width:20px"></span><button class="btn on" data-r="3" aria-label="Show Li to Ar">Li – Ar</button><button class="btn" data-r="1" aria-label="Show H to Kr">H – Kr</button></div>
+<canvas id="gcv" class="rv" role="img" aria-label="Line graph of the selected periodic property against atomic number"></canvas><p class="cy rv" id="gT" style="margin-top:10px;font-weight:600" aria-live="polite"></p><p class="mu" style="font-size:13px">Atomic radius: empirical values (pm). Electronegativity: Pauling scale. Ionization energy: first, kJ/mol. Noble gases have no radius/EN value and appear as gaps. Data lives in the <code>DATA</code> object in the script and can be edited.</p></section>
+
+<!-- 08 PROBLEM -->
+<section id="solve"><div class="tag rv">08 / Problem solving</div><div class="h2 rv" style="margin:2vh 0">Which element has the<br>larger atomic radius?</div>
+<div class="row rv"><button class="btn big2" style="padding:.4em 1.6em" id="qNa" aria-label="Answer sodium">Na</button><button class="btn big2" style="padding:.4em 1.6em" id="qCl" aria-label="Answer chlorine">Cl</button></div><div id="qf" class="big2" aria-live="polite" style="min-height:1.2em"></div>
+<div id="steps" style="max-width:760px;margin:20px 0"></div><div id="mini" class="wrap"></div></section>
+
+<!-- 09 GAME -->
+<section id="game"><div class="tag rv">09 / Game</div><div class="h2 rv" style="margin:2vh 0">Element Hunter</div>
+<div class="hud rv"><div><span>Level</span><b id="hL">01</b></div><div><span>Score</span><b id="hS">0</b></div><div><span>Streak</span><b id="hK">0</b></div><div><span>Time</span><b id="hT">00:00</b></div><div><span>Target</span><b id="hR">0/5</b></div></div>
+<div id="mission" aria-live="polite">Press start to receive your mission.</div><div id="fb" aria-live="assertive"></div>
+<div class="row"><button class="btn on" id="gStart" aria-label="Start or restart the game">Start mission</button></div><div class="wrap"><div class="pt" id="gpt"></div></div></section>
+
+<!-- 10 PROJECT -->
+<section id="project"><div class="tag rv">10 / Project based learning</div><div class="h2 rv" style="margin:2vh 0">Your mission:<br>build your own<br>periodic table</div>
+<div class="row rv" style="font-weight:800;letter-spacing:.14em;font-size:13px"><span>RESEARCH</span><span class="cy">→</span><span>ANALYZE</span><span class="cy">→</span><span>DESIGN</span><span class="cy">→</span><span>BUILD</span><span class="cy">→</span><span>PRESENT</span></div>
+<div class="chk rv" id="chk"></div><div class="bar"><i id="pb"></i></div><p class="mu" id="pbT"></p>
+<div class="fld" id="fld"></div><div class="row"><button class="btn" id="pFill" aria-label="Autofill fields from the symbol">Autofill from symbol</button><button class="btn on" id="pAdd" aria-label="Add element card to my table">Add to my table</button><button class="btn" id="pCsv" aria-label="Download my table as CSV">Download CSV</button></div><div class="cards" id="cards"></div></section>
+
+<!-- 11 QUIZ -->
+<section id="quiz"><div class="tag rv">11 / Final challenge</div><div class="h2 rv" style="margin:2vh 0">Final<br>challenge</div>
+<div style="max-width:820px"><div class="row" style="justify-content:space-between;font-size:12px;letter-spacing:.2em;color:var(--mu);margin:0"><span id="qn">QUESTION 01 / 10</span><span id="qs">SCORE 0 / 1000</span></div><div class="bar"><i id="qb"></i></div>
+<div class="big2" id="qq" style="font-size:clamp(24px,3.4vw,42px);margin:3vh 0"></div><div id="qo"></div><div id="qx" aria-live="polite" style="margin:14px 0;min-height:3.4em"></div><button class="btn" id="qNext" style="display:none" aria-label="Next question">Next →</button></div></section>
+
+<!-- 12 FINAL -->
+<section id="final"><canvas id="fcv" aria-hidden="true"></canvas><div><div class="h2 rv">You've explored<br>the elements.</div><p class="rv mu" style="font-size:clamp(18px,2.4vw,32px);margin:3vh 0">The periodic table is not just a table.<br><span class="cy">It is a map of matter.</span></p><div class="tag rv" style="margin-bottom:5vh">Explore. Understand. Discover.</div><button class="btn rv" id="restart" aria-label="Restart journey">Restart journey</button></div></section>
+
+<script>
+/* =========================================================
+   DATA — accurate element data (standard atomic weights, IUPAC)
+   ========================================================= */
+const SY='H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og'.split(' ');
+const NM='Hydrogen Helium Lithium Beryllium Boron Carbon Nitrogen Oxygen Fluorine Neon Sodium Magnesium Aluminium Silicon Phosphorus Sulfur Chlorine Argon Potassium Calcium Scandium Titanium Vanadium Chromium Manganese Iron Cobalt Nickel Copper Zinc Gallium Germanium Arsenic Selenium Bromine Krypton Rubidium Strontium Yttrium Zirconium Niobium Molybdenum Technetium Ruthenium Rhodium Palladium Silver Cadmium Indium Tin Antimony Tellurium Iodine Xenon Caesium Barium Lanthanum Cerium Praseodymium Neodymium Promethium Samarium Europium Gadolinium Terbium Dysprosium Holmium Erbium Thulium Ytterbium Lutetium Hafnium Tantalum Tungsten Rhenium Osmium Iridium Platinum Gold Mercury Thallium Lead Bismuth Polonium Astatine Radon Francium Radium Actinium Thorium Protactinium Uranium Neptunium Plutonium Americium Curium Berkelium Californium Einsteinium Fermium Mendelevium Nobelium Lawrencium Rutherfordium Dubnium Seaborgium Bohrium Hassium Meitnerium Darmstadtium Roentgenium Copernicium Nihonium Flerovium Moscovium Livermorium Tennessine Oganesson'.split(' ');
+const MS='1.008 4.0026 6.94 9.0122 10.81 12.011 14.007 15.999 18.998 20.180 22.990 24.305 26.982 28.085 30.974 32.06 35.45 39.948 39.098 40.078 44.956 47.867 50.942 51.996 54.938 55.845 58.933 58.693 63.546 65.38 69.723 72.630 74.922 78.971 79.904 83.798 85.468 87.62 88.906 91.224 92.906 95.95 98 101.07 102.91 106.42 107.87 112.41 114.82 118.71 121.76 127.60 126.90 131.29 132.91 137.33 138.91 140.12 140.91 144.24 145 150.36 151.96 157.25 158.93 162.50 164.93 167.26 168.93 173.05 174.97 178.49 180.95 183.84 186.21 190.23 192.22 195.08 196.97 200.59 204.38 207.2 208.98 209 210 222 223 226 227 232.04 231.04 238.03 237 244 243 247 247 251 252 257 258 259 266 267 268 269 270 277 278 281 282 285 286 289 290 293 294 294'.split(' ');
+const ROWS=['H . . . . . . . . . . . . . . . . He','Li Be . . . . . . . . . . B C N O F Ne','Na Mg . . . . . . . . . . Al Si P S Cl Ar','K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr','Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe','Cs Ba * Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn','Fr Ra * Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og'];
+const POS={};ROWS.forEach((r,i)=>r.split(' ').forEach((s,j)=>{if(s!=='.'&&s!=='*')POS[s]=[j+1,i+1]}));
+SY.slice(56,71).forEach((s,i)=>POS[s]=[3+i,9]);SY.slice(88,103).forEach((s,i)=>POS[s]=[3+i,10]);
+const CORE=[[86,'Rn'],[54,'Xe'],[36,'Kr'],[18,'Ar'],[10,'Ne'],[2,'He']];
+const ORD=['1s2','2s2','2p6','3s2','3p6','4s2','3d10','4p6','5s2','4d10','5p6','6s2','4f14','5d10','6p6','7s2','5f14','6d10','7p6'];
+const EXC={24:'[Ar] 3d⁵ 4s¹',29:'[Ar] 3d¹⁰ 4s¹',41:'[Kr] 4d⁴ 5s¹',42:'[Kr] 4d⁵ 5s¹',44:'[Kr] 4d⁷ 5s¹',45:'[Kr] 4d⁸ 5s¹',46:'[Kr] 4d¹⁰',47:'[Kr] 4d¹⁰ 5s¹',57:'[Xe] 5d¹ 6s²',58:'[Xe] 4f¹ 5d¹ 6s²',64:'[Xe] 4f⁷ 5d¹ 6s²',78:'[Xe] 4f¹⁴ 5d⁹ 6s¹',79:'[Xe] 4f¹⁴ 5d¹⁰ 6s¹',89:'[Rn] 6d¹ 7s²',90:'[Rn] 6d² 7s²',91:'[Rn] 5f² 6d¹ 7s²',92:'[Rn] 5f³ 6d¹ 7s²',93:'[Rn] 5f⁴ 6d¹ 7s²',96:'[Rn] 5f⁷ 6d¹ 7s²',103:'[Rn] 5f¹⁴ 7s² 7p¹'};
+const sup=n=>String(n).replace(/\d/g,d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
+function config(z){if(EXC[z])return EXC[z];let left=z,out=[];for(const o of ORD){const c=+o.slice(2),take=Math.min(c,left);if(take)out.push([o.slice(0,2),take]);left-=take;if(!left)break}
+ const core=CORE.find(([n])=>n<z);let skip=core?core[0]:0,tail=[];for(const [l,n] of out){if(skip>=n){skip-=n;continue}tail.push([l,n-skip]);skip=0}
+ tail.sort((a,b)=>a[0][0]-b[0][0]||'spdf'.indexOf(a[0][1])-'spdf'.indexOf(b[0][1]));
+ // keep the occupied-subshell order within same n correct: s,p are filled after d for same n? sorted by n then l
+ return(core?`[${core[1]}] `:'')+tail.map(([l,n])=>l+sup(n)).join(' ')}
+const MET=['B','Si','Ge','As','Sb','Te'],NMT=['C','N','O','P','S','Se'];
+const CATN={alk:'Alkali metal',alke:'Alkaline earth metal',tm:'Transition metal',pt:'Post-transition metal',met:'Metalloid',nm:'Nonmetal',hal:'Halogen',ng:'Noble gas',lan:'Lanthanide',act:'Actinide'};
+const EL=SY.map((s,i)=>{const [c,r]=POS[s],z=i+1;let k;if(r>=9)k=z<=71?'lan':'act';else if(s==='H')k='nm';else if(c===1)k='alk';else if(c===2)k='alke';else if(c<=12)k='tm';else if(c===17)k='hal';else if(c===18)k='ng';else if(MET.includes(s))k='met';else if(NMT.includes(s))k='nm';else k='pt';
+ return{z,s,n:NM[i],m:MS[i],c,r,k,g:r>=9?'f-block':c,p:r>=9?r-3:r,cfg:config(z)}});
+const BY=Object.fromEntries(EL.map(e=>[e.s,e]));
+const DATA={ // trend data indexed by atomic number (null = no value)
+ rad:[25,null,145,105,85,70,65,60,50,null,180,150,125,110,100,100,100,null,220,180,160,140,135,140,140,140,135,135,135,135,130,125,115,115,115,null],
+ ie:[1312,2372,520,900,801,1086,1402,1314,1681,2081,496,738,578,787,1012,1000,1251,1521,419,590,633,659,651,653,717,763,760,737,746,906,579,762,947,941,1140,1351],
+ en:EL.map(()=>null)};
+'H 2.20,Li .98,Be 1.57,B 2.04,C 2.55,N 3.04,O 3.44,F 3.98,Na .93,Mg 1.31,Al 1.61,Si 1.90,P 2.19,S 2.58,Cl 3.16,K .82,Ca 1.00,Sc 1.36,Ti 1.54,V 1.63,Cr 1.66,Mn 1.55,Fe 1.83,Co 1.88,Ni 1.91,Cu 1.90,Zn 1.65,Ga 1.81,Ge 2.01,As 2.18,Se 2.55,Br 2.96,Kr 3.00,Rb .82,Sr .95,Y 1.22,Zr 1.33,Nb 1.6,Mo 2.16,Tc 1.9,Ru 2.2,Rh 2.28,Pd 2.20,Ag 1.93,Cd 1.69,In 1.78,Sn 1.96,Sb 2.05,Te 2.1,I 2.66,Xe 2.6,Cs .79,Ba .89,Hf 1.3,Ta 1.5,W 2.36,Re 1.9,Os 2.2,Ir 2.2,Pt 2.28,Au 2.54,Hg 2.00,Tl 1.62,Pb 2.33,Bi 2.02,Po 2.0,At 2.2,Fr .7,Ra .9'.split(',').forEach(p=>{const[a,b]=p.split(' ');DATA.en[BY[a].z-1]=parseFloat(b)});
+const PROP={rad:{n:'Atomic radius',u:'pm',d:['← larger · smaller →','↑ smaller · ↓ larger'],t:'Radius generally decreases across a period (more nuclear charge, same shells) and increases down a group (more shells).'},
+ en:{n:'Electronegativity',u:'',d:['smaller ← → larger','↑ larger · ↓ smaller'],t:'Electronegativity generally increases across a period and decreases down a group. Fluorine is the highest (3.98).'},
+ ie:{n:'Ionization energy',u:' kJ/mol',d:['smaller ← → larger','↑ larger · ↓ smaller'],t:'First ionization energy generally rises across a period and falls down a group; noble gases are peaks.'}};
+const $=(q,r=document)=>r.querySelector(q),$$=(q,r=document)=>[...r.querySelectorAll(q)];
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),lerp=(a,b,t)=>a+(b-a)*t,sm=(x,a,b)=>{const t=clamp((x-a)/(b-a));return t*t*(3-2*t)};
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const pinP=el=>{const r=el.getBoundingClientRect();return clamp(-r.top/(r.height-innerHeight))};
+const NS='http://www.w3.org/2000/svg',mk=(t,a={},p)=>{const n=document.createElementNS(NS,t);for(const k in a)n.setAttribute(k,a[k]);p&&p.appendChild(n);return n};
+const COL={alk:'#6d4fc2',alke:'#6d4fc2',tm:'#2f5fc4',pt:'#4a5a7c',met:'#1f8a9c',nm:'#22a9c4',hal:'#67e8f9',ng:'#a78bfa',lan:'#5b5fd1',act:'#5b5fd1'};
+const yW=r=>r<=7?r-.5:r-1.2; // world y of a table row (row 8 is the f-block gap)
+
+/* ===== reusable interactive table builder ===== */
+function buildTable(root,cb,filter){root.innerHTML='';return EL.filter(e=>!filter||filter(e)).map(e=>{const b=document.createElement('button');b.className='el c-'+e.k;b.style.gridColumn=e.c;b.style.gridRow=e.r;b.style.setProperty('--c',e.c);
+ b.innerHTML=`<i>${e.z}</i><b>${e.s}</b>`;b.setAttribute('aria-label',`${e.n}, atomic number ${e.z}`);b.onclick=()=>cb(e,b);root.appendChild(b);b.e=e;return b})}
+
+/* =========================================================
+   CINEMATIC CAMERA STAGE (canvas): particles → atom → element card → full table
+   ========================================================= */
+const cv=$('#stage'),g=cv.getContext('2d');let W,H;
+function rs(){const d=Math.min(devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*d;cv.height=H*d;g.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',()=>{rs();rsF()});
+const PT=Array.from({length:160},()=>({a:Math.random()*6.283,d:.15+Math.random(),r:Math.random(),s:.6+Math.random()*1.8,f:Math.random()*6}));
+function stage(p,t){g.clearRect(0,0,W,H);const cx=W/2,cy=H/2,m=Math.min(W,H),zp=sm(p,.4,.93),k=Math.exp(lerp(Math.log(20),0,zp)),base=Math.min(W*.97/18,H*.72/9.4),cp=k*base,vis=sm(p,.3,.42);
+ if(vis>0){const fx=lerp(16.5,9,zp),fy=lerp(yW(3),4.6,zp);g.textAlign='center';g.textBaseline='middle';
+  for(const e of EL){const sx=cx+(e.c-.5-fx)*cp,sy=cy+(yW(e.r)-fy)*cp;if(sx<-cp||sx>W+cp||sy<-cp||sy>H+cp)continue;const s=cp*.92,hl=(e.s==='Cl'?1:0)*(1-zp);
+   g.globalAlpha=vis*(.35+.65*(1-zp*.3));g.fillStyle=COL[e.k];g.globalAlpha=vis*(.18+hl*.2);g.fillRect(sx-s/2,sy-s/2,s,s);g.globalAlpha=vis*(.55+hl*.45);g.strokeStyle=COL[e.k];g.lineWidth=Math.max(1,cp*.012);g.strokeRect(sx-s/2,sy-s/2,s,s);
+   g.globalAlpha=vis;g.fillStyle='#fff';g.font=`700 ${cp*.4}px Inter,system-ui,sans-serif`;if(cp>14)g.fillText(e.s,sx,sy+cp*.03);
+   if(cp>46){g.font=`600 ${cp*.13}px Inter,system-ui,sans-serif`;g.fillStyle='#9aa8c0';g.fillText(e.z,sx-s*.34,sy-s*.36);g.fillText(e.m,sx+s*.18,sy-s*.36)}
+   if(cp>90){g.font=`600 ${cp*.1}px Inter,system-ui,sans-serif`;g.fillText(e.n,sx,sy+s*.36)}}g.globalAlpha=1}
+ const aa=1-sm(p,.3,.5),R=m*.22*(1-.55*sm(p,.2,.48)),conv=sm(p,0,.2),tt=RM?0:t;
+ for(const q of PT){const sx=cx+Math.cos(q.a)*q.d*W*.55+Math.sin(tt*.6+q.f)*14,sy=cy+Math.sin(q.a)*q.d*H*.55+Math.cos(tt*.5+q.f)*14,tx=cx+Math.cos(q.a)*18*q.r,ty=cy+Math.sin(q.a)*18*q.r;
+  g.globalAlpha=(.15+.7*conv)*(aa*.8+.2);g.fillStyle=q.r>.6?'#22d3ee':'#cfe9ff';g.beginPath();g.arc(lerp(sx,tx,conv),lerp(sy,ty,conv),q.s*(1+conv),0,6.283);g.fill()}
+ if(aa>0){g.globalAlpha=aa;const gr=g.createRadialGradient(cx,cy,0,cx,cy,R*.5);gr.addColorStop(0,'rgba(34,211,238,.9)');gr.addColorStop(1,'rgba(34,211,238,0)');g.fillStyle=gr;g.beginPath();g.arc(cx,cy,R*.5*conv,0,6.283);g.fill();
+  g.fillStyle='#22d3ee';g.beginPath();g.arc(cx,cy,R*.1*conv,0,6.283);g.fill();
+  [0,1,2].forEach(i=>{const rot=i*Math.PI/3+tt*.08;g.strokeStyle=i==1?'rgba(139,92,246,.7)':'rgba(59,130,246,.7)';g.lineWidth=1.2;g.globalAlpha=aa*sm(p,.12,.2);g.beginPath();g.ellipse(cx,cy,R,R*.36,rot,0,6.283);g.stroke();
+   const a=tt*(1.1+i*.4)+i*2,ex=R*Math.cos(a),ey=R*.36*Math.sin(a);g.fillStyle='#fff';g.beginPath();g.arc(cx+ex*Math.cos(rot)-ey*Math.sin(rot),cy+ex*Math.sin(rot)+ey*Math.cos(rot),m*.007+2,0,6.283);g.fill()})}
+ g.globalAlpha=1}
+const o1=$('#o1'),o2=$('#o2'),hero=$('#hero'),topS=$('#top');
+function stageUI(p){o1.style.opacity=1-sm(p,.03,.09);const a=sm(p,.04,.1)*(1-sm(p,.25,.33));o2.style.opacity=a;o2.style.filter=`blur(${(1-sm(p,.04,.1)+sm(p,.25,.33))*12}px)`;o2.style.transform=`scale(${1+sm(p,.04,.33)*.12})`;
+ const h=sm(p,.86,.96);hero.style.opacity=h;hero.style.transform=`scale(${1.08-h*.08})`;hero.style.pointerEvents=h>.6?'auto':'none';$('#explore').style.pointerEvents=h>.6?'auto':'none'}
+
+/* ===== WHY section: camera on the atom ===== */
+const wg=$('#wAg');
+(function(){mk('circle',{r:16,fill:'#22d3ee'},wg);[[0,'#3b82f6'],[60,'#8b5cf6'],[120,'#3b82f6']].forEach(([r,c],i)=>{const gg=mk('g',{transform:`rotate(${r})`},wg);mk('ellipse',{rx:240,ry:86,fill:'none',stroke:c,'stroke-width':1.6,opacity:.8},gg);
+ const e=mk('circle',{r:9,fill:'#fff'},gg),am=mk('animateMotion',{dur:(3+i*1.1)+'s',repeatCount:'indefinite',path:'M-240,0 a240,86 0 1,0 480,0 a240,86 0 1,0 -480,0'},e)});
+ [[-6,-4],[6,-5],[0,7],[-8,6],[8,5]].forEach(([x,y],i)=>mk('circle',{cx:x,cy:y,r:5,fill:i%2?'#8fa3c7':'#22d3ee',opacity:.9},wg))})();
+if(RM)$('#wA').pauseAnimations&&$('#wA').pauseAnimations();
+const chainEls=$$('#chain div');
+function why(p){const A=$('#wA');const z=1+1.3*sm(p,.12,.38)-1.3*sm(p,.62,.8);A.style.transform=`translate(-50%,-50%) scale(${z})`;A.style.opacity=sm(p,.03,.12)*(1-sm(p,.78,.9));
+ $('#wT').style.opacity=1-sm(p,.1,.2);$('#wT').style.filter=`blur(${sm(p,.1,.2)*10}px)`;
+ [['#l1',.2,.5],['#l2',.26,.5],['#l3',.32,.5]].forEach(([s,a,b])=>{$(s).style.opacity=sm(p,a,a+.05)*(1-sm(p,b,b+.05))});
+ $('#wC').style.opacity=sm(p,.5,.56)*(1-sm(p,.64,.7));$('#wC').style.transform=`translateX(${(1-sm(p,.5,.56))*60}px)`;
+ chainEls.forEach((c,i)=>c.classList.toggle('on',p>.7+i*.055));$('#chain').style.opacity=sm(p,.66,.72)}
+
+/* ===== APPS section: full-screen transformations ===== */
+const APPS=[{s:'H',w:'H₂O',n:'WATER',d:'Hydrogen bonds with oxygen. Two atoms of H and one of O make water.'},{s:'O',w:'O₂',n:'OXYGEN',d:'Pairs of oxygen atoms make the gas every breath depends on.'},{s:'Fe',w:'STEEL',d:'Iron alloyed with a little carbon becomes the steel in bridges, buildings and cars.'},{s:'Na',w:'NaCl',d:'Sodium joins chlorine in a crystal we know as table salt.'},{s:'Ca',w:'BONE',d:'Calcium compounds make bones and teeth hard.'},{s:'Si',w:'',d:''}];
+const SIST=[['Si','Z = 14 · atomic structure','CRYSTAL','Each silicon atom bonds to four neighbours in a diamond-cubic lattice.'],['','','CHIP','Ultra-pure silicon wafers are patterned into billions of transistors.'],['','','LAPTOP','Microchips power every phone and laptop.']];
+(function(){const l=$('#sv0');for(let i=0;i<5;i++)for(let j=0;j<5;j++){const x=30+i*35,y=30+j*35;if(i<4)mk('line',{x1:x,y1:y,x2:x+35,y2:y,stroke:'#3b82f6',opacity:.5},l);if(j<4)mk('line',{x1:x,y1:y,x2:x,y2:y+35,stroke:'#3b82f6',opacity:.5},l);mk('circle',{cx:x,cy:y,r:6,fill:'#22d3ee'},l)}
+ let d='';for(let i=0;i<5;i++){const o=55+i*22;d+=`M${o},28V40M${o},160V172M28,${o}H40M160,${o}H172`}$('#pins').setAttribute('d',d)})();
+const aS=$('#aS'),aW=$('#aW'),aD=$('#aD'),siv=$('#siv');let lastApp='';
+function apps(p){const N=APPS.length,i=Math.min(N-1,Math.floor(p*N)),sub=clamp(p*N-i),a=APPS[i];$('#appP').style.background=`radial-gradient(ellipse at ${30+i*8}% 50%,rgba(${i%2?'139,92,246':'34,211,238'},.12),transparent 60%)`;
+ siv.style.opacity=0;['#sv0','#sv1','#sv2'].forEach(s=>$(s).style.opacity=0);
+ if(i<5){aS.textContent=a.s;aW.textContent=a.w;const m=sm(sub,.3,.55);aS.style.opacity=(sm(sub,0,.1))*(1-m);aS.style.transform=`scale(${1+sub*1.1})`;aS.style.filter=`blur(${m*24}px)`;aW.style.opacity=m*(1-sm(sub,.9,1));aW.style.transform=`translateY(-50%) scale(${.85+m*.15})`;aD.style.opacity=m;aD.textContent=a.d;$('#aTag').textContent='03 / Elements are everywhere'}
+ else{const st=Math.min(2,Math.floor(sub*3)),ss=clamp(sub*3-st),sx=SIST[st];aS.textContent='Si';aS.style.opacity=(1-sm(sub,.04,.16));aS.style.transform=`scale(${1+sub*3})`;aS.style.filter=`blur(${sm(sub,.04,.16)*20}px)`;aW.textContent=sx[2];aW.style.opacity=sm(sub,.1,.2)*.12;aW.style.transform='translateY(-50%) scale(1.15)';
+  siv.style.opacity=sm(sub,.1,.2);$('#sv'+st).style.opacity=1;siv.style.transform=`translate(-50%,-50%) scale(${.8+ss*.25})`;aD.style.opacity=sm(sub,.1,.2);aD.textContent=sx[3];$('#aTag').textContent='03 / Si → crystal → chip → laptop'}}
+
+/* ===== Interactive table + trends ===== */
+const pt=$('#pt'),detail=$('#detail'),tw=$('#tw');let lastBtn=null;
+const tb=buildTable(pt,(e,b)=>{lastBtn=b;const r=b.getBoundingClientRect(),w=tw.getBoundingClientRect();tw.style.transformOrigin=`${r.left+r.width/2-w.left}px ${r.top+r.height/2-w.top}px`;tw.classList.add('zoom');
+ $('#dBig').innerHTML=`<i>${e.z}</i><b>${e.s}</b><span class="mu">${e.n}</span>`;const f=(a,b)=>`<dt>${a}</dt><dd>${b}</dd>`;
+ $('#dDl').innerHTML=f('Element',e.n.toUpperCase())+f('Symbol',e.s)+f('Atomic number',e.z)+f('Atomic mass',+e.m<100&&!['98'].includes(e.m)?e.m:'['+e.m+'] (radioactive)')+f('Group',e.g)+f('Period',e.p)+f('Electron configuration',e.cfg)+f('Category',CATN[e.k]);
+ setTimeout(()=>{detail.classList.add('open');$('#dClose').focus()},RM?0:450)});
+function closeD(){detail.classList.remove('open');tw.classList.remove('zoom');lastBtn&&lastBtn.focus()}
+$('#dClose').onclick=closeD;detail.onclick=e=>{if(e.target===detail)closeD()};
+$('#lg').innerHTML=Object.entries(CATN).map(([k,v])=>`<span class="c-${k}">${v}</span>`).join('');
+let mode='';
+$$('[data-m]').forEach(b=>b.onclick=()=>{$$('[data-m]').forEach(x=>x.classList.toggle('on',x===b));mode=b.dataset.m;pt.classList.toggle('tr',!!mode);
+ if(!mode){$('#dir').textContent='';$('#lg').style.display='';tb.forEach(x=>x.classList.remove('nd'));return}$('#lg').style.display='none';
+ const arr=DATA[mode],vals=arr.filter(v=>v!=null),mn=Math.min(...vals),mx=Math.max(...vals);$('#dir').innerHTML=PROP[mode].n.toUpperCase()+'<br>'+PROP[mode].d.join('  /  ');
+ tb.forEach(x=>{const v=arr[x.e.z-1];x.classList.toggle('nd',v==null);if(v!=null)x.style.setProperty('--v',((v-mn)/(mx-mn)).toFixed(3));x.title=v==null?'no data':PROP[mode].n+': '+v+PROP[mode].u})});
+/* Na vs Cl */
+$('#cmp').onclick=()=>{$('#gNa').style.transform='translate(110px,120px)';$('#gCl').style.transform='translate(290px,120px)';$('#tNa').setAttribute('opacity',1);$('#tCl').setAttribute('opacity',1);$('#cmpT').textContent='Na (≈180 pm) → larger atomic radius. Cl (≈100 pm) → smaller. Both are in Period 3, but Cl has 17 protons pulling the same three shells tighter than Na’s 11.'};
+$('#cmpR').onclick=()=>{$('#gNa').style.transform=$('#gCl').style.transform='translate(200px,120px)';$('#tNa').setAttribute('opacity',0);$('#tCl').setAttribute('opacity',0);$('#cmpT').textContent='Press compare to see both atoms side by side.'};
+
+/* ===== Ion simulation ===== */
+function atomSim(svId,statId,z,shells,type){const sv=$(svId),st=$(statId);let ne;
+ function draw(){sv.innerHTML='';mk('circle',{cx:150,cy:150,r:20,fill:'#22d3ee',opacity:.9},sv);mk('text',{x:150,y:155,'text-anchor':'middle','font-size':12,'font-weight':800,fill:'#05070B'},sv).textContent=z+'+';
+  shells.forEach((n,i)=>{const r=44+i*34,g2=mk('g',{class:'spin',style:`animation-duration:${8+i*6}s;${RM?'animation:none':''}`},sv);mk('circle',{cx:150,cy:150,r,fill:'none',stroke:i==shells.length-1?'#a78bfa':'#3b82f6',opacity:.5},g2);
+   const cnt=i==shells.length-1?(type=='rem'?(ne<z?0:1):ne-(z-shells[i])):n;const cc=i==shells.length-1?Math.max(0,ne-(z-shells[i])):n;
+   for(let k=0;k<cc;k++){const a=k/Math.max(cc,1)*6.283;mk('circle',{cx:150+r*Math.cos(a),cy:150+r*Math.sin(a),r:5,fill:'#fff',class:i==shells.length-1?'outer':''},g2)}});
+  const ch=z-ne;st.innerHTML=`<div>Protons<b>${z}</b></div><div>Electrons<b>${ne}</b></div><div>Charge<b>${ch>0?'+'+ch:ch}</b></div><div>Particle<b>${type=='rem'?(ch?'Na⁺':'Na'):(ch?'Cl⁻':'Cl')}</b></div>`}
+ function fly(from,to){const e=mk('circle',{cx:150,cy:150,r:6,fill:'#22d3ee',style:'filter:drop-shadow(0 0 6px #22d3ee)'},sv);e.animate([{transform:`translate(${from[0]}px,${from[1]}px)`,opacity:1},{transform:`translate(${to[0]}px,${to[1]}px)`,opacity:to[2]??0}],{duration:RM?1:1300,easing:'cubic-bezier(.2,.7,.2,1)',fill:'forwards'}).onfinish=()=>e.remove()}
+ return{reset(){ne=z;draw()},rem(){if(ne<z)return;fly([120,0],[260,-20]);ne--;draw()},add(){if(ne>z)return;fly([-260,0],[shells.length*34+10-0,0,1]);setTimeout(()=>{ne++;draw()},RM?0:1000)}}}
+const sNa=atomSim('#svNa','#sNa',11,[2,8,1],'rem'),sCl=atomSim('#svCl','#sCl',17,[2,8,7],'add');
+// Na: outer shell electron count = ne-(z-1)… handled in draw; reset both
+sNa.reset();sCl.reset();$('#bRem').onclick=()=>sNa.rem();$('#rNa').onclick=()=>sNa.reset();$('#bAdd').onclick=()=>sCl.add();$('#rCl').onclick=()=>sCl.reset();
+
+/* ===== Graph (canvas, animated, data-driven) ===== */
+const gc=$('#gcv'),gx=gc.getContext('2d');let gProp='rad',gRng=3,gCur=[],gTo=[],gT0=0,gReveal=0,gSeen=false,gHover=-1;
+function gData(){const lo=gRng==3?3:1,hi=gRng==3?18:36;return Array.from({length:hi-lo+1},(_,i)=>({z:lo+i,v:DATA[gProp][lo+i-1]}))}
+function gSet(re){const d=gData();gCur=gTo.length==d.length?gTo.map((v,i)=>v):d.map(x=>x.v);gTo=d.map(x=>x.v);gT0=performance.now();if(re)gReveal=0;$('#gT').textContent=PROP[gProp].t}
+$$('[data-p]').forEach(b=>b.onclick=()=>{$$('[data-p]').forEach(x=>x.classList.toggle('on',x===b));gProp=b.dataset.p;gSet(false)});
+$$('[data-r]').forEach(b=>b.onclick=()=>{$$('[data-r]').forEach(x=>x.classList.toggle('on',x===b));gRng=+b.dataset.r;gTo=[];gSet(true)});
+function rsG(){const d=Math.min(devicePixelRatio||1,2);gc.width=gc.clientWidth*d;gc.height=gc.clientHeight*d;gx.setTransform(d,0,0,d,0,0)}
+function graph(t){const w=gc.clientWidth,h=gc.clientHeight,L=60,B=h-40,T=24,R=w-20,d=gData(),n=d.length;gx.clearRect(0,0,w,h);if(!gSeen)return;gReveal=clamp(gReveal+(RM?1:.012));const ease=sm((t-gT0)/900,0,1),vals=d.map((x,i)=>x.v==null||gCur[i]==null?x.v:lerp(gCur[i],gTo[i],ease));
+ const real=vals.filter(v=>v!=null),mn=0,mx=Math.max(...real)*1.1,X=i=>lerp(L,R,i/(n-1)),Y=v=>lerp(B,T,(v-mn)/(mx-mn));
+ gx.globalAlpha=sm(gReveal,0,.15);gx.strokeStyle='#1c2740';gx.fillStyle='#9aa8c0';gx.font='12px Inter,system-ui';gx.textAlign='right';
+ for(let i=0;i<=4;i++){const v=mx*i/4,y=Y(v);gx.beginPath();gx.moveTo(L,y);gx.lineTo(R,y);gx.stroke();gx.fillText(v>=100?Math.round(v):v.toFixed(1),L-8,y+4)}
+ gx.textAlign='center';d.forEach((x,i)=>{if(n<20||i%2==0)gx.fillText(SY[x.z-1],X(i),B+18)});gx.fillText('Atomic number (position) →',(L+R)/2,h-4);gx.save();gx.translate(14,(T+B)/2);gx.rotate(-Math.PI/2);gx.fillText(PROP[gProp].n+PROP[gProp].u,0,0);gx.restore();
+ const vis=gReveal*1.0*n*1.0;gx.globalAlpha=1;gx.strokeStyle='#22d3ee';gx.lineWidth=2.5;gx.shadowColor='#22d3ee';gx.shadowBlur=10;gx.beginPath();let pen=false;
+ vals.forEach((v,i)=>{if(i>vis||v==null){pen=false;return}const x=X(i),y=Y(v);pen?gx.lineTo(x,y):gx.moveTo(x,y);pen=true});gx.stroke();gx.shadowBlur=0;
+ vals.forEach((v,i)=>{if(i>vis||v==null)return;const hot=i===gHover||(gProp=='en'&&d[i].z==9);gx.fillStyle=hot?'#fff':'#22d3ee';gx.beginPath();gx.arc(X(i),Y(v),hot?7:4.5,0,6.283);gx.fill();if(hot){gx.fillStyle='#fff';gx.textAlign='center';gx.fillText(`${SY[d[i].z-1]}: ${+v.toFixed(2)}${PROP[gProp].u}`,X(i),Y(v)-14)}})}
+gc.addEventListener('mousemove',e=>{const r=gc.getBoundingClientRect(),n=gData().length,i=Math.round((e.clientX-r.left-60)/(r.width-80)*(n-1));gHover=i>=0&&i<n?i:-1});gc.addEventListener('mouseleave',()=>gHover=-1);
+
+/* ===== Problem solving ===== */
+const STEPS=['Locate Na and Cl on the periodic table.','Identify their period: both are in Period 3.','Compare their position: Na is Group 1 (far left), Cl is Group 17 (right).','Apply the trend: across a period, atomic radius decreases left → right.','Determine the answer: Na has the larger atomic radius (≈180 pm vs ≈100 pm).'];
+const mini=$('#mini'),mp=document.createElement('div');mp.className='pt small';mini.appendChild(mp);buildTable(mp,()=>{},e=>e.r<=3).forEach(b=>{b.tabIndex=-1;b.onclick=null;if(b.e.s=='Na'||b.e.s=='Cl')b.classList.add('hit')});
+$('#qCl').onclick=()=>{$('#qf').innerHTML='<span style="color:#f87171">TRY AGAIN</span>';$('#qf').animate([{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'none'}],200)};
+$('#qNa').onclick=()=>{$('#qf').innerHTML='<span style="color:#4ade80">CORRECT</span>';const s=$('#steps');s.innerHTML='';STEPS.forEach((t,i)=>setTimeout(()=>{const d=document.createElement('div');d.className='step rv';d.innerHTML=`<b>STEP 0${i+1}</b><span>${t}</span>`;s.appendChild(d);requestAnimationFrame(()=>d.classList.add('in'))},RM?0:i*650));
+ setTimeout(()=>{mini.style.transform='scale(1.7)'},RM?0:STEPS.length*650+300);mini.style.transform='none'};
+
+/* ===== Game: ELEMENT HUNTER ===== */
+const gpt=$('#gpt'),GL=['ATOMIC NUMBER','SYMBOL','GROUP','PERIOD','ELECTRON CONFIGURATION'],pool=EL.filter(e=>e.z<=36);
+const gS={lv:0,rd:0,score:0,streak:0,t0:0,rt:0,tg:null,run:false,tmr:0};
+const rnd=a=>a[Math.floor(Math.random()*a.length)],pad=n=>String(n).padStart(2,'0');
+const gb=buildTable(gpt,(e,b)=>{if(!gS.run)return;const ok=gS.tg.test(e);if(ok){const sec=(performance.now()-gS.rt)/1000;gS.score+=100+Math.min(50,gS.streak*10)+Math.round(Math.max(0,10-sec)*5);gS.streak++;b.classList.add('hit');burst(b);$('#fb').innerHTML='<span style="color:#4ade80">✓ TARGET FOUND</span>';gS.run=false;setTimeout(()=>{b.classList.remove('hit');gS.rd++;nextT()},900)}
+ else{gS.streak=0;b.classList.add('bad');setTimeout(()=>b.classList.remove('bad'),400);$('#fb').innerHTML='<span style="color:#f87171">✕ WRONG ELEMENT</span>'}hud()});
+function hud(){$('#hL').textContent=pad(gS.lv+1);$('#hS').textContent=gS.score;$('#hK').textContent=gS.streak;$('#hR').textContent=Math.min(gS.rd+1,5)+'/5';const s=Math.floor((performance.now()-gS.t0)/1000);$('#hT').textContent=pad(Math.floor(s/60))+':'+pad(s%60)}
+function mkT(){const e=rnd(pool),l=gS.lv;if(l==0)return{p:`FIND ELEMENT ${e.z}`,test:x=>x.z==e.z};if(l==1)return{p:`FIND THE SYMBOL “${e.s}”`,test:x=>x.s==e.s};
+ if(l==2){const G=rnd([1,2,13,14,15,16,17,18]);return{p:`FIND AN ELEMENT IN GROUP ${G}`,test:x=>x.c==G&&x.r<=7}}if(l==3){const P=rnd([2,3,4]);return{p:`FIND AN ELEMENT IN PERIOD ${P}`,test:x=>x.p==P&&x.r<=7}}return{p:`FIND: ${e.cfg}`,test:x=>x.cfg==e.cfg}}
+function nextT(){if(gS.rd>=5){gS.lv++;gS.rd=0;if(gS.lv>=5){clearInterval(gS.tmr);gS.run=false;$('#mission').textContent=`MISSION COMPLETE · SCORE ${gS.score}`;$('#fb').textContent='';$('#gStart').textContent='Play again';$('#gStart').disabled=false;return}$('#fb').innerHTML=`<span class="cy">LEVEL ${pad(gS.lv+1)} · ${GL[gS.lv]}</span>`}
+ gS.tg=mkT();gS.rt=performance.now();gS.run=true;$('#mission').textContent=`LEVEL ${pad(gS.lv+1)} · ${GL[gS.lv]} — ${gS.tg.p}`;hud()}
+$('#gStart').onclick=()=>{Object.assign(gS,{lv:0,rd:0,score:0,streak:0,t0:performance.now()});clearInterval(gS.tmr);gS.tmr=setInterval(hud,500);$('#gStart').textContent='Restart mission';nextT()};
+function burst(b){const r=b.getBoundingClientRect();for(let i=0;i<18;i++){const p=document.createElement('span');p.style.cssText=`position:fixed;left:${r.left+r.width/2}px;top:${r.top+r.height/2}px;width:6px;height:6px;border-radius:50%;background:${i%2?'#22d3ee':'#a78bfa'};pointer-events:none;z-index:90`;document.body.appendChild(p);const a=i/18*6.283,d=40+Math.random()*50;p.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`,opacity:0}],{duration:RM?1:700,easing:'ease-out'}).onfinish=()=>p.remove()}}
+
+/* ===== Project ===== */
+const CK=['Research','Data','Analysis','Design','Presentation'],FD=[['name','Element name'],['sym','Symbol'],['z','Atomic number'],['mass','Atomic mass'],['grp','Group'],['per','Period'],['cfg','Electron configuration'],['prop','Properties'],['app','Application']];
+let PJ=JSON.parse(localStorage.getItem('pj')||'{"ck":[],"cards":[]}');
+$('#chk').innerHTML=CK.map((c,i)=>`<label><input type="checkbox" data-i="${i}" ${PJ.ck.includes(i)?'checked':''}>✓ ${c}</label>`).join('');
+$('#fld').innerHTML=FD.map(([k,l])=>`<div><label for="f_${k}">${l}</label><input id="f_${k}"></div>`).join('');
+const save=()=>{try{localStorage.setItem('pj',JSON.stringify(PJ))}catch(e){}},fv=k=>$('#f_'+k).value.trim();
+function pjUI(){const n=PJ.ck.length;$('#pb').style.width=n/5*100+'%';$('#pbT').textContent=`${n} / 5 steps complete`+(n==5?' — mission accomplished!':'');
+ $('#cards').innerHTML=PJ.cards.map((c,i)=>`<div><b>${c.sym}</b>${c.name} · Z ${c.z} · ${c.mass}<button class="btn" style="padding:.2em .8em;margin-left:8px" data-d="${i}" aria-label="Delete ${c.name}">×</button></div>`).join('')||'<span class="mu">No elements added yet.</span>'}
+$('#chk').onchange=e=>{const i=+e.target.dataset.i;PJ.ck=e.target.checked?[...new Set([...PJ.ck,i])]:PJ.ck.filter(x=>x!=i);save();pjUI()};
+$('#cards').onclick=e=>{const d=e.target.dataset.d;if(d!=null){PJ.cards.splice(+d,1);save();pjUI()}};
+$('#pFill').onclick=()=>{const s=fv('sym').toLowerCase(),e=EL.find(x=>x.s.toLowerCase()==s||x.n.toLowerCase()==s);if(!e){alert('Type a valid symbol (e.g. Cl) in the Symbol field.');return}Object.entries({name:e.n,sym:e.s,z:e.z,mass:e.m,grp:e.g,per:e.p,cfg:e.cfg}).forEach(([k,v])=>$('#f_'+k).value=v)};
+$('#pAdd').onclick=()=>{if(!fv('name')||!fv('sym')){alert('Please fill at least name and symbol.');return}PJ.cards.push(Object.fromEntries(FD.map(([k])=>[k,fv(k)])));FD.forEach(([k])=>$('#f_'+k).value='');save();pjUI()};
+$('#pCsv').onclick=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"',csv=[FD.map(f=>q(f[1])).join(','),...PJ.cards.map(c=>FD.map(([k])=>q(c[k])).join(','))].join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='my-periodic-table.csv';a.click()};
+pjUI();
+
+/* ===== Quiz ===== */
+const QZ=[['How many groups does the modern periodic table have?',['8','12','18','32'],2,'The standard table has 18 vertical columns called groups.'],['The atomic number of an element equals its number of…',['neutrons','protons','electron shells','valence electrons'],1,'Atomic number Z is the number of protons in the nucleus.'],['Which elements all belong to Group 1?',['Li, Na, K','Be, Mg, Ca','F, Cl, Br','He, Ne, Ar'],0,'Li, Na and K are alkali metals with one valence electron.'],['Which element is in Group 17 and Period 3?',['Na','Mg','Cl','Ar'],2,'Group 17 are the halogens; in Period 3 that is chlorine.'],['The electron configuration of sodium is…',['[Ne] 3s²','[Ne] 3s¹','[Ar] 4s¹','[He] 2s¹'],1,'Na (Z = 11): 1s² 2s² 2p⁶ 3s¹ = [Ne] 3s¹ → Period 3, Group 1.'],['Magnesium (Group 2) most commonly forms which ion?',['Mg⁺','Mg²⁺','Mg²⁻','Mg³⁺'],1,'Mg loses its two valence electrons to become Mg²⁺.'],['Which atom has the largest atomic radius?',['Li','Na','K','Rb'],3,'Radius increases down a group; Rb is lowest in this group list.'],['Which element has the highest electronegativity?',['Na','Cl','F','K'],2,'Fluorine (3.98) sits at the upper right of the table.'],['Across a period, left to right, atomic radius generally…',['increases','decreases','stays constant','doubles'],1,'Nuclear charge grows while the shells stay the same, pulling electrons closer.'],['Which element is the base material of computer chips?',['Ca','Fe','Si','Na'],2,'Silicon is a semiconductor, the foundation of microchips.']];
+let qi=0,qsc=0,qok=0;const shuf=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function qShow(){const [q,o,c,x]=QZ[qi],ord=shuf(o.map((t,i)=>[t,i==c]));$('#qn').textContent=`QUESTION ${pad(qi+1)} / 10`;$('#qs').textContent=`SCORE ${qsc} / 1000`;$('#qb').style.width=qi/10*100+'%';$('#qq').textContent=q;$('#qx').textContent='';$('#qNext').style.display='none';
+ $('#qo').innerHTML='';ord.forEach(([t,ok],i)=>{const b=document.createElement('button');b.className='opt rv';b.textContent='ABCD'[i]+'.  '+t;b.onclick=()=>{$$('.opt').forEach((y,j)=>{y.disabled=true;if(ord[j][1])y.classList.add('ok')});if(ok){qsc+=100;qok++;$('#qx').innerHTML='<b style="color:#4ade80">CORRECT</b> — '+x}else{b.classList.add('no');$('#qx').innerHTML='<b style="color:#f87171">INCORRECT</b> — '+x}$('#qs').textContent=`SCORE ${qsc} / 1000`;$('#qNext').style.display='';$('#qNext').textContent=qi==9?'See result →':'Next →';$('#qNext').focus()};$('#qo').appendChild(b);setTimeout(()=>b.classList.add('in'),60+i*90)})}
+$('#qNext').onclick=()=>{if(qi<9){qi++;qShow();return}const rank=qok>=9?'CHEMISTRY MASTER':qok>=7?'CHEMISTRY EXPLORER':qok>=4?'LAB ASSISTANT':'CURIOUS BEGINNER';$('#qb').style.width='100%';$('#qq').innerHTML=`SCORE<br><span class="cy">${qsc} / 1000</span>`;$('#qo').innerHTML=`<div class="stat"><div>Correct<b>${qok} / 10</b></div><div>Rank<b class="cy">${rank}</b></div></div><button class="btn" id="qAgain">Try again</button>`;$('#qx').textContent='';$('#qNext').style.display='none';$('#qAgain').onclick=()=>{qi=qsc=qok=0;qShow()}};
+qShow();
+
+/* ===== Final scene: particles re-form the table ===== */
+const fc=$('#fcv'),fg=fc.getContext('2d');let FW,FH,fT=0,fSeen=false;const FP=EL.map(e=>({e,x:Math.random(),y:Math.random()}));
+function rsF(){const d=Math.min(devicePixelRatio||1,2);FW=fc.clientWidth;FH=fc.clientHeight;fc.width=FW*d;fc.height=FH*d;fg.setTransform(d,0,0,d,0,0)}
+function final(t){fg.clearRect(0,0,FW,FH);if(!fSeen)return;fT=clamp(fT+(RM?1:.006));const cp=Math.min(FW*.92/18,FH*.8/9.4),ox=(FW-18*cp)/2,oy=(FH-9.4*cp)/2,k=sm(fT,0,.85);fg.textAlign='center';fg.textBaseline='middle';
+ FP.forEach(p=>{const tx=ox+(p.e.c-.5)*cp,ty=oy+(yW(p.e.r)+.3)*cp,x=lerp(p.x*FW+Math.sin(t*.001+p.e.z)*20,tx,k),y=lerp(p.y*FH+Math.cos(t*.001+p.e.z)*20,ty,k);fg.globalAlpha=.3+.5*k;fg.fillStyle=COL[p.e.k];
+  if(k>.7){fg.globalAlpha=.25*sm(k,.7,1);fg.fillRect(x-cp*.45,y-cp*.45,cp*.9,cp*.9);fg.globalAlpha=.55*sm(k,.7,1);fg.fillStyle='#fff';fg.font=`600 ${cp*.34}px Inter,system-ui`;fg.fillText(p.e.s,x,y)}fg.globalAlpha=.3+.5*(1-k);fg.fillStyle='#22d3ee';fg.beginPath();fg.arc(x,y,2.2*(1-k)+.5,0,6.283);fg.fill()});fg.globalAlpha=1}
+
+/* ===== Navigation, progress, reveal, main loop ===== */
+const SEC=[['top','Intro'],['apps','Application'],['obj','Objectives'],['table','Periodic table'],['graph','Trends'],['sim','Simulation'],['game','Game'],['project','Project'],['quiz','Quiz']];
+const menu=$('#menu');menu.innerHTML=SEC.map(([id,n],i)=>`<button data-go="${id}" style="transition-delay:${i*45}ms"><b>0${i+1}</b>${n.toUpperCase()}</button>`).join('');
+const toggle=o=>{menu.classList.toggle('open',o);$('#menuBtn').setAttribute('aria-expanded',o);$('#menuBtn').textContent=o?'Close':'Menu'};
+$('#menuBtn').onclick=()=>toggle(!menu.classList.contains('open'));addEventListener('keydown',e=>{if(e.key=='Escape'){toggle(false);closeD()}});
+const go=id=>{const el=$('#'+id);scrollTo({top:id=='top'?0:el.offsetTop,behavior:RM?'auto':'smooth'})};
+menu.onclick=e=>{const b=e.target.closest('[data-go]');if(b){toggle(false);go(b.dataset.go)}};
+$('#explore').onclick=()=>go('why');
+$('#restart').onclick=()=>{qi=qsc=qok=0;qShow();fT=0;scrollTo({top:0,behavior:RM?'auto':'smooth'})};
+const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting)x.target.classList.add('in')}),{threshold:.15});$$('.rv').forEach(x=>io.observe(x));
+new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting&&!gSeen){gSeen=true;gSet(true)}}),{threshold:.3}).observe(gc);
+new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting&&!fSeen){fSeen=true;fT=0}}),{threshold:.3}).observe($('#final'));
+const SIDS=['top','why','apps','obj','table','sim','graph','solve','game','project','quiz','final'].map(i=>$('#'+i));
+function frame(t){const y=scrollY,maxY=document.documentElement.scrollHeight-innerHeight;$('#prog i').style.height=clamp(y/maxY)*100+'%';
+ let n=0;SIDS.forEach((s,i)=>{if(s.offsetTop<=y+innerHeight*.5)n=i});$('#bn').textContent=pad(n+1);
+ const vis=s=>{const r=s.getBoundingClientRect();return r.bottom>0&&r.top<innerHeight};
+ if(vis(topS)){const p=pinP(topS);stage(p,t/1000);stageUI(p)}if(vis($('#why')))why(pinP($('#why')));if(vis($('#apps')))apps(pinP($('#apps')));
+ if(vis(gc))graph(t);if(vis($('#final')))final(t);requestAnimationFrame(frame)}
+rs();rsG();rsF();addEventListener('resize',rsG);requestAnimationFrame(frame);
+</script></body></html>
